@@ -13,15 +13,15 @@ public static class AudioManager
 {
     private static List<AudioFile> audioClips = [];
     public static IReadOnlyList<AudioClip> AudioClips =>
-        CustomBoomboxMusic.Instance.IncludeVanilla && vanilla != null
+        (CustomBoomboxMusic.Instance.IncludeVanilla || audioClips.Count == 0) && vanilla != null
             ? audioClips.Select(f => f.AudioClip).Concat(vanilla).ToList()
             : audioClips.Select(f => f.AudioClip).ToList();
     public static IReadOnlyList<AudioFile> AudioFiles =>
-        CustomBoomboxMusic.Instance.IncludeVanilla && vanilla != null
+        (CustomBoomboxMusic.Instance.IncludeVanilla || audioClips.Count == 0) && vanilla != null
             ? audioClips
                 .Concat(
                     vanilla.Select(
-                        (f, i) => new AudioFile(0, f, $"Boombox {i} (Lethal Company).ogg")
+                        (f, i) => new AudioFile(0, f, $"Boombox {i + 1} (Lethal Company).ogg")
                     )
                 )
                 .ToList()

@@ -23,6 +23,8 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
     internal ConfigEntry<bool> loadIntoRAM = null!;
     internal bool LoadIntoRAM => loadIntoRAM.Value;
+    internal ConfigEntry<bool> displayNowPlaying = null!;
+    internal bool DisplayNowPlaying => displayNowPlaying.Value;
     internal ConfigEntry<bool> includeVanilla = null!;
     internal bool IncludeVanilla => ClientSide ? includeVanilla.Value : CSync.IncludeVanilla;
 
@@ -38,6 +40,12 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             "LoadIntoRAM",
             true,
             "Loads music into RAM, recommended if you use an HDD, not recommended if you have 8GB of RAM or less"
+        );
+        displayNowPlaying = Config.Bind(
+            "General",
+            "DisplayNowPlaying",
+            true,
+            "Whether to display a popup about which song is currently playing"
         );
         if (!ClientSide)
             CSync.Initialize(this);
@@ -76,24 +84,18 @@ public class CustomBoomboxMusic : BaseUnityPlugin
         // ReSharper disable once UnusedMember.Local
         private static IEnumerable<CodeInstruction> Transpiler(
             IEnumerable<CodeInstruction> instructions
-        )
-        {
-            var matcher = new CodeMatcher(instructions).MatchForward(
-                false,
-                new CodeMatch(OpCodes.Ldelem_Ref)
-            );
-            PrintCILCode(matcher);
-            matcher.Insert(
-                new CodeInstruction(OpCodes.Dup),
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(
-                    OpCodes.Call,
-                    AccessTools.Method(typeof(BoomboxPlayPatch), nameof(a))
+        ) =>
+            new CodeMatcher(instructions)
+                .MatchForward(false, new CodeMatch(OpCodes.Ldelem_Ref))
+                .Insert(
+                    new CodeInstruction(OpCodes.Dup),
+                    new CodeInstruction(OpCodes.Ldarg_0),
+                    new CodeInstruction(
+                        OpCodes.Call,
+                        AccessTools.Method(typeof(BoomboxPlayPatch), nameof(a))
+                    )
                 )
-            );
-            PrintCILCode(matcher);
-            return matcher.InstructionEnumeration();
-        }
+                .InstructionEnumeration();
 
         internal static void a(int songId, BoomboxItem boombox)
         {
@@ -113,23 +115,12 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             )
                 AnnouncePlaying(songId);
         }
-
-        internal static void PrintCILCode(CodeMatcher matcher)
-        {
-            Logger.LogDebug(
-                $"Current position: {matcher.Pos} {(matcher.Pos >= 0 && matcher.Pos < matcher.Length ? matcher.Instruction : "none")}"
-            );
-            int i = 0;
-            foreach (var instruction in matcher.Instructions())
-            {
-                Logger.LogDebug($"{i} {instruction}");
-                i++;
-            }
-        }
     }
 
-    public static void AnnouncePlaying(int songId)
+    internal static void AnnouncePlaying(int songId)
     {
+        if (!Instance.DisplayNowPlaying)
+            return;
         var audioFiles = AudioManager.AudioFiles;
         if (songId >= audioFiles.Count || songId < 0)
             return;
