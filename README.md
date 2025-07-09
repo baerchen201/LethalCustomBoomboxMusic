@@ -4,6 +4,14 @@
 
 The [Custom Boombox Music](https://thunderstore.io/c/lethal-company/p/Steven/Custom_Boombox_Music/) mod is not directly compatible with mods installed via Thunderstore Mod Manager or r2modman. This mod aims to fix that, and generally provide more stability and reliability.
 
+## IMPORTANT (READ IF CREATING MODPACK)
+
+**By default, this mod is completely client-sided, however it supports basic settings synchronisation.**
+
+If everyone has this mod, simply installing [CSync](https://thunderstore.io/c/lethal-company/p/Sigurd/CSync/) is recommended, as it will synchronize the settings with the host.
+
+_Verification of music files might be added in a future release, that way it is guaranteed that everyone hears the same music._
+
 ## Usage (creating your music mod)
 
 Simply create a directory with the following files and folders (replace `MyPlugin` with your mod name):
