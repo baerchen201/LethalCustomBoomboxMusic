@@ -1,0 +1,9 @@
+{
+  "name": "CustomBoomboxMusic",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/baerchen201/LethalCustomBoomboxMusic",
+  "description": "A Lethal Company modding API for easy addition of boombox music",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.2100"
+  ]
+}
