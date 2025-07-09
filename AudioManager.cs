@@ -11,22 +11,20 @@ namespace CustomBoomboxMusic;
 
 public static class AudioManager
 {
-    private static Dictionary<uint, AudioClip> audioClips = [];
+    private static List<AudioFile> audioClips = [];
     public static IReadOnlyCollection<AudioClip> AudioClips =>
         CustomBoomboxMusic.Instance.IncludeVanilla && vanilla != null
-            ? audioClips.Values.Concat(vanilla).ToList()
-            : audioClips.Values;
+            ? audioClips.Select(f => f.AudioClip).Concat(vanilla).ToList()
+            : audioClips.Select(f => f.AudioClip).ToList();
 
     internal static AudioClip[]? vanilla = null;
 
     internal static void Reload()
     {
-        audioClips.Do(kvp => kvp.Value.UnloadAudioData());
+        audioClips.Do(f => f.AudioClip.UnloadAudioData());
         audioClips.Clear();
         ProcessDirectory(Paths.BepInExRootPath);
-        audioClips = audioClips
-            .OrderBy(kvp => kvp.Key)
-            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        audioClips = audioClips.OrderBy(f => f.Crc).ToList();
     }
 
     private static int ProcessDirectory(string path)
@@ -82,7 +80,13 @@ public static class AudioManager
         if (audioClip && audioClip.loadState == AudioDataLoadState.Loaded)
         {
             CustomBoomboxMusic.Logger.LogInfo($"Loaded {Path.GetFileName(path)}");
-            audioClips.Add(Crc32.Calculate(webRequest.downloadHandler.data), audioClip);
+            audioClips.Add(
+                new AudioFile(
+                    Crc32.Calculate(webRequest.downloadHandler.data),
+                    audioClip,
+                    Path.GetFullPath(path)
+                )
+            );
             return true;
         }
 
