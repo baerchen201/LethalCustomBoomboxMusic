@@ -12,10 +12,20 @@ namespace CustomBoomboxMusic;
 public static class AudioManager
 {
     private static List<AudioFile> audioClips = [];
-    public static IReadOnlyCollection<AudioClip> AudioClips =>
+    public static IReadOnlyList<AudioClip> AudioClips =>
         CustomBoomboxMusic.Instance.IncludeVanilla && vanilla != null
             ? audioClips.Select(f => f.AudioClip).Concat(vanilla).ToList()
             : audioClips.Select(f => f.AudioClip).ToList();
+    public static IReadOnlyList<AudioFile> AudioFiles =>
+        CustomBoomboxMusic.Instance.IncludeVanilla && vanilla != null
+            ? audioClips
+                .Concat(
+                    vanilla.Select(
+                        (f, i) => new AudioFile(0, f, $"Boombox {i} (Lethal Company).ogg")
+                    )
+                )
+                .ToList()
+            : audioClips;
 
     internal static AudioClip[]? vanilla = null;
 

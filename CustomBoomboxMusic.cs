@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -65,5 +68,73 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             AudioManager.vanilla ??= (AudioClip[])__instance.musicAudios.Clone();
             __instance.musicAudios = AudioManager.AudioClips.ToArray();
         }
+    }
+
+    [HarmonyPatch(typeof(BoomboxItem), nameof(BoomboxItem.StartMusic))]
+    internal class BoomboxPlayPatch
+    {
+        // ReSharper disable once UnusedMember.Local
+        private static IEnumerable<CodeInstruction> Transpiler(
+            IEnumerable<CodeInstruction> instructions
+        )
+        {
+            var matcher = new CodeMatcher(instructions).MatchForward(
+                false,
+                new CodeMatch(OpCodes.Ldelem_Ref)
+            );
+            PrintCILCode(matcher);
+            matcher.Insert(
+                new CodeInstruction(OpCodes.Dup),
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(
+                    OpCodes.Call,
+                    AccessTools.Method(typeof(BoomboxPlayPatch), nameof(a))
+                )
+            );
+            PrintCILCode(matcher);
+            return matcher.InstructionEnumeration();
+        }
+
+        internal static void a(int songId, BoomboxItem boombox)
+        {
+            if (
+                !GameNetworkManager.Instance
+                || !GameNetworkManager.Instance.localPlayerController
+                || GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
+            )
+                return;
+            Logger.LogDebug($">> BoomboxPlayPatch(#{songId}, {boombox})");
+            if (
+                Vector3.Distance(
+                    boombox.boomboxAudio.transform.position,
+                    GameNetworkManager.Instance.localPlayerController.transform.position
+                ) <= boombox.boomboxAudio.maxDistance
+            )
+                AnnouncePlaying(songId);
+        }
+
+        internal static void PrintCILCode(CodeMatcher matcher)
+        {
+            Logger.LogDebug(
+                $"Current position: {matcher.Pos} {(matcher.Pos >= 0 && matcher.Pos < matcher.Length ? matcher.Instruction : "none")}"
+            );
+            int i = 0;
+            foreach (var instruction in matcher.Instructions())
+            {
+                Logger.LogDebug($"{i} {instruction}");
+                i++;
+            }
+        }
+    }
+
+    public static void AnnouncePlaying(int songId)
+    {
+        var audioFiles = AudioManager.AudioFiles;
+        if (songId >= audioFiles.Count || songId < 0)
+            return;
+        var name = Path.GetFileNameWithoutExtension(audioFiles[songId].FilePath);
+        Logger.LogInfo($"Now playing: {name}");
+        HUDManager.Instance.DisplayTip("Now playing:", $"{name}");
     }
 }
