@@ -1,0 +1,67 @@
+## About
+
+**This mod is intended for easy creation of mods, that add more songs to the Boombox item.**
+
+The [Custom Boombox Music](https://thunderstore.io/c/lethal-company/p/Steven/Custom_Boombox_Music/) mod is not directly compatible with mods installed via Thunderstore Mod Manager or r2modman. This mod aims to fix that, and generally provide more stability and reliability.
+
+## Usage (creating your music mod)
+
+Simply create a directory with the following files and folders (replace `MyPlugin` with your mod name):
+
+```
+MyPlugin
+├── manifest.json (Mod information, see below)
+├── README.md (Text displayed on mod page, like the one you're reading right now, can be empty)
+├── icon.png (Your mod icon, must be 256x256 pixels)
+└── BepInEx
+    └── plugins
+        └── CustomBoomboxMusic (Your music files go in here)
+            ├── Artist - Title.mp3
+            ├── Example Artist - Example Song (Example Game).ogg
+            └── music.m4a
+```
+
+It is recommended to name your music files as shown (`Artist - Title (Source)`), since the user will see a "Now Playing" popup displaying the file name.
+
+The following file extensions are supported:
+ - `.mp3`
+ - `.ogg`
+ - `.wav`
+ - `.m4a`
+ - `.aiff`
+
+### manifest.json:
+
+The manifest.json file contains general information about your mod.
+
+This is the general format:
+
+```
+{
+  "name": Mod name,
+  "version_number": Version number, in format major.minor.patch. This has to be increased every time you upload a new version of your mod,
+  "website_url": Website url, can be left empty,
+  "description": A short description of your mod,
+  "dependencies": A list of dependencies, should be ["baer1-CustomBoomboxMusic-<VERSION>"]
+}
+```
+
+Example:
+
+```json
+{
+  "name": "MyPlugin",
+  "version_number": "1.0.0",
+  "website_url": "",
+  "description": "My cool boombox music plugin",
+  "dependencies": ["baer1-CustomBoomboxMusic-1.0.0"]
+}
+```
+
+You can verify your manifest.json file [here](https://thunderstore.io/tools/manifest-v1-validator/).
+
+### Uploading
+
+Simply zip the contents of your folder and upload them to [thunderstore.io](https://thunderstore.io/package/create/)
+
+You should be able to install it through your mod manager after about 3 hours
