@@ -12,7 +12,12 @@ namespace CustomBoomboxMusic;
 public static class AudioManager
 {
     private static Dictionary<uint, AudioClip> audioClips = [];
-    public static IReadOnlyCollection<AudioClip> AudioClips => audioClips.Values.ToList();
+    public static IReadOnlyCollection<AudioClip> AudioClips =>
+        CustomBoomboxMusic.Instance.IncludeVanilla && vanilla != null
+            ? audioClips.Values.Concat(vanilla).ToList()
+            : audioClips.Values;
+
+    internal static AudioClip[]? vanilla = null;
 
     internal static void Reload()
     {

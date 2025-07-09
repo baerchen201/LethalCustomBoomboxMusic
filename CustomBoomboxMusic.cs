@@ -1,12 +1,15 @@
 using System.Linq;
 using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine;
 
 namespace CustomBoomboxMusic;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+[BepInDependency("com.sigurd.csync", BepInDependency.DependencyFlags.SoftDependency)]
 public class CustomBoomboxMusic : BaseUnityPlugin
 {
     public static CustomBoomboxMusic Instance { get; private set; } = null!;
@@ -17,6 +20,10 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
     internal ConfigEntry<bool> loadIntoRAM = null!;
     internal bool LoadIntoRAM => loadIntoRAM.Value;
+    internal ConfigEntry<bool> includeVanilla = null!;
+    internal bool IncludeVanilla => ClientSide ? includeVanilla.Value : CSync.IncludeVanilla;
+
+    internal static bool ClientSide => !Chainloader.PluginInfos.ContainsKey("com.sigurd.csync");
 
     private void Awake()
     {
@@ -29,6 +36,15 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             true,
             "Loads music into RAM, recommended if you use an HDD, not recommended if you have 8GB of RAM or less"
         );
+        if (!ClientSide)
+            CSync.Initialize(this);
+        else
+            includeVanilla = Config.Bind(
+                "General",
+                "IncludeVanilla",
+                true,
+                "Includes vanilla music (forced true if no custom music is present)"
+            );
 
         AudioManager.Reload();
 
@@ -44,7 +60,10 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     internal class BoomboxUsePatch
     {
         // ReSharper disable once UnusedMember.Local
-        private static void Prefix(ref BoomboxItem __instance) =>
+        private static void Prefix(ref BoomboxItem __instance)
+        {
+            AudioManager.vanilla ??= (AudioClip[])__instance.musicAudios.Clone();
             __instance.musicAudios = AudioManager.AudioClips.ToArray();
+        }
     }
 }
