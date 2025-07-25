@@ -158,7 +158,8 @@ public class CustomBoomboxMusic : BaseUnityPlugin
                 else if (clip.Crc != null)
                     ModNetworkBehaviour.Instance.StartPlayingMusicServerRpc(
                         __instance.NetworkObject,
-                        clip.Crc.Value
+                        clip.Crc.Value,
+                        clip.Name
                     );
                 else
                     Logger.LogWarning($"AudioFile doesn't have CRC nor VanillaID: {clip}");

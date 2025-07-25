@@ -68,7 +68,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void StartPlayingMusicServerRpc(NetworkObjectReference boomboxObjectReference, uint crc)
+    public void StartPlayingMusicServerRpc(
+        NetworkObjectReference boomboxObjectReference,
+        uint crc,
+        string? clipName = null
+    )
     {
         var networkManager = NetworkManager;
         if (networkManager == null || !networkManager.IsListening)
@@ -86,6 +90,10 @@ public class ModNetworkBehaviour : NetworkBehaviour
             );
             writer.WriteValueSafe(boomboxObjectReference);
             BytePacker.WriteValueBitPacked(writer, crc);
+            var isMissingNameNull = clipName == null;
+            writer.WriteValueSafe(isMissingNameNull);
+            if (!isMissingNameNull)
+                writer.WriteValueSafe(clipName);
             __endSendServerRpc(
                 ref writer,
                 START_PLAYING_MUSIC_SERVER_RPC_ID,
@@ -103,7 +111,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
             $">> StartPlayingMusicServerRpc({boomboxObjectReference}, {crc})"
         );
         if (boomboxObjectReference.TryGet(out _))
-            StartPlayingMusicClientRpc(boomboxObjectReference, crc);
+            StartPlayingMusicClientRpc(boomboxObjectReference, crc, clipName);
         else
             CustomBoomboxMusic.Logger.LogWarning(
                 "[StartPlayingMusicServerRpc] Boombox object could not be found, dropping request"
@@ -113,7 +121,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
     private const uint START_PLAYING_MUSIC_CLIENT_RPC_ID = 636642922U;
 
     [ClientRpc]
-    public void StartPlayingMusicClientRpc(NetworkObjectReference boomboxObjectReference, uint crc)
+    public void StartPlayingMusicClientRpc(
+        NetworkObjectReference boomboxObjectReference,
+        uint crc,
+        string? clipName = null
+    )
     {
         var networkManager = NetworkManager;
         if (networkManager == null || !networkManager.IsListening)
@@ -131,6 +143,10 @@ public class ModNetworkBehaviour : NetworkBehaviour
             );
             writer.WriteValueSafe(boomboxObjectReference);
             BytePacker.WriteValueBitPacked(writer, crc);
+            var isMissingNameNull = clipName == null;
+            writer.WriteValueSafe(isMissingNameNull);
+            if (!isMissingNameNull)
+                writer.WriteValueSafe(clipName);
             __endSendClientRpc(
                 ref writer,
                 START_PLAYING_MUSIC_CLIENT_RPC_ID,
@@ -145,7 +161,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
             return;
 
         CustomBoomboxMusic.Logger.LogDebug(
-            $">> StartPlayingMusicClientRpc({boomboxObjectReference}, {crc})"
+            $">> StartPlayingMusicClientRpc({boomboxObjectReference}, {crc}, {clipName})"
         );
         if (!boomboxObjectReference.TryGet(out var boomboxObject))
         {
@@ -170,7 +186,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
             CustomBoomboxMusic.Logger.LogWarning(
                 $"Couldn't find AudioClip with crc32 {crc}, playing fallback"
             );
-            PlayFallback(boombox, crc.ToString());
+            PlayFallback(boombox, $"{clipName} (CRC32: {crc})");
             return;
         }
         CustomBoomboxMusic.Logger.LogDebug($"   {clip}");
@@ -331,8 +347,16 @@ public class ModNetworkBehaviour : NetworkBehaviour
             return;
         reader.ReadValueSafe(out NetworkObjectReference boomboxObjectReference);
         ByteUnpacker.ReadValueBitPacked(reader, out uint crc);
+        reader.ReadValueSafe(out bool isMissingNameNull);
+        string? clipName = null;
+        if (!isMissingNameNull)
+            reader.ReadValueSafe(out clipName);
         ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Server;
-        ((ModNetworkBehaviour)target).StartPlayingMusicServerRpc(boomboxObjectReference, crc);
+        ((ModNetworkBehaviour)target).StartPlayingMusicServerRpc(
+            boomboxObjectReference,
+            crc,
+            clipName
+        );
         ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.None;
     }
 
@@ -347,8 +371,16 @@ public class ModNetworkBehaviour : NetworkBehaviour
             return;
         reader.ReadValueSafe(out NetworkObjectReference boomboxObjectReference);
         ByteUnpacker.ReadValueBitPacked(reader, out uint crc);
+        reader.ReadValueSafe(out bool isMissingNameNull);
+        string? clipName = null;
+        if (!isMissingNameNull)
+            reader.ReadValueSafe(out clipName);
         ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Client;
-        ((ModNetworkBehaviour)target).StartPlayingMusicClientRpc(boomboxObjectReference, crc);
+        ((ModNetworkBehaviour)target).StartPlayingMusicClientRpc(
+            boomboxObjectReference,
+            crc,
+            clipName
+        );
         ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.None;
     }
 
