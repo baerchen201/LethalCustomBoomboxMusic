@@ -1,18 +1,14 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection.Emit;
 using BepInEx;
-using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CustomBoomboxMusic;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-[BepInDependency("com.sigurd.csync", BepInDependency.DependencyFlags.SoftDependency)]
 public class CustomBoomboxMusic : BaseUnityPlugin
 {
     public static CustomBoomboxMusic Instance { get; private set; } = null!;
@@ -21,14 +17,17 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
     public const string DIRECTORY_NAME = "CustomBoomboxMusic";
 
-    internal ConfigEntry<bool> loadIntoRAM = null!;
-    internal bool LoadIntoRAM => loadIntoRAM.Value;
-    internal ConfigEntry<bool> displayNowPlaying = null!;
-    internal bool DisplayNowPlaying => displayNowPlaying.Value;
-    internal ConfigEntry<bool> includeVanilla = null!;
-    internal bool IncludeVanilla => ClientSide ? includeVanilla.Value : CSync.IncludeVanilla;
+    private ConfigEntry<bool> loadIntoRAM = null!;
+    public bool LoadIntoRAM => loadIntoRAM.Value;
 
-    internal static bool ClientSide => !Chainloader.PluginInfos.ContainsKey("com.sigurd.csync");
+    private ConfigEntry<bool> displayNowPlaying = null!;
+    public bool DisplayNowPlaying => displayNowPlaying.Value;
+
+    private ConfigEntry<bool> includeVanilla = null!;
+    public bool IncludeVanilla => includeVanilla.Value;
+
+    private ConfigEntry<bool> clientSide = null!;
+    public bool ClientSide => clientSide.Value;
 
     private void Awake()
     {
@@ -47,17 +46,22 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             true,
             "Whether to display a popup about which song is currently playing"
         );
-        if (!ClientSide)
-            CSync.Initialize(this);
-        else
-            includeVanilla = Config.Bind(
-                "General",
-                "IncludeVanilla",
-                true,
-                "Includes vanilla music (forced true if no custom music is present)"
-            );
+        includeVanilla = Config.Bind(
+            "General",
+            "IncludeVanilla",
+            true,
+            "Includes vanilla music (forced true if no custom music is present)"
+        );
+        clientSide = Config.Bind(
+            "General",
+            "ClientSide",
+            true,
+            "Enables or disables custom networking to more accurately sync which song is currently playing"
+        );
 
         AudioManager.Reload();
+
+        ModNetworkBehaviour.InitializeRPCS_ModNetworkBehaviour();
 
         Harmony ??= new Harmony(MyPluginInfo.PLUGIN_GUID);
         Logger.LogDebug("Patching...");
@@ -67,37 +71,110 @@ public class CustomBoomboxMusic : BaseUnityPlugin
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
 
+    [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
+    internal class StartPatch
+    {
+        // ReSharper disable once UnusedMember.Local
+        private static void Postfix()
+        {
+            if (Instance.ClientSide || networkPrefab != null)
+                return;
+
+            networkPrefab = new GameObject();
+            networkPrefab.AddComponent<NetworkObject>();
+            networkPrefab.AddComponent<ModNetworkBehaviour>();
+
+            DontDestroyOnLoad(networkPrefab);
+            networkPrefab.hideFlags = HideFlags.HideAndDontSave;
+
+            NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
+            Logger.LogDebug($"Registered network prefab {a(networkPrefab)}");
+        }
+    }
+
+    private static string a(GameObject? e) => e == null ? "null" : e.ToString();
+
+    private static GameObject networkPrefab = null!;
+
+    [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
+    internal class InitPatch
+    {
+        // ReSharper disable once UnusedMember.Local
+        private static void Postfix()
+        {
+            Logger.LogDebug(
+                $">> InitPatch() ClientSide:{Instance.ClientSide} IsHost:{NetworkManager.Singleton.IsHost} IsServer:{NetworkManager.Singleton.IsServer} networkPrefab:{a(networkPrefab)}"
+            );
+            if (
+                Instance.ClientSide
+                || (!NetworkManager.Singleton.IsHost && !NetworkManager.Singleton.IsServer)
+                || networkPrefab == null
+            )
+            {
+                Logger.LogDebug("<< InitPatch false");
+                return;
+            }
+
+            var networkHandlerHost = Instantiate(networkPrefab, Vector3.zero, Quaternion.identity);
+            networkHandlerHost.GetComponent<NetworkObject>().Spawn();
+            Logger.LogDebug("<< InitPatch true");
+        }
+    }
+
     [HarmonyPatch(typeof(BoomboxItem), nameof(BoomboxItem.ItemActivate))]
     internal class BoomboxUsePatch
     {
         // ReSharper disable once UnusedMember.Local
-        private static void Prefix(ref BoomboxItem __instance)
-        {
-            AudioManager.vanilla ??= (AudioClip[])__instance.musicAudios.Clone();
-            __instance.musicAudios = AudioManager.AudioClips.ToArray();
-        }
+        private static void Prefix(ref BoomboxItem __instance) =>
+            AudioManager.vanillaAudioClips ??= (AudioClip[])__instance.musicAudios.Clone();
     }
 
     [HarmonyPatch(typeof(BoomboxItem), nameof(BoomboxItem.StartMusic))]
     internal class BoomboxPlayPatch
     {
         // ReSharper disable once UnusedMember.Local
-        private static IEnumerable<CodeInstruction> Transpiler(
-            IEnumerable<CodeInstruction> instructions
-        ) =>
-            new CodeMatcher(instructions)
-                .MatchForward(false, new CodeMatch(OpCodes.Ldelem_Ref))
-                .Insert(
-                    new CodeInstruction(OpCodes.Dup),
-                    new CodeInstruction(OpCodes.Ldarg_0),
-                    new CodeInstruction(
-                        OpCodes.Call,
-                        AccessTools.Method(typeof(BoomboxPlayPatch), nameof(a))
-                    )
-                )
-                .InstructionEnumeration();
+        private static bool Prefix(
+            ref BoomboxItem __instance,
+            ref bool startMusic,
+            ref bool pitchDown
+        )
+        {
+            if (!startMusic)
+                return true;
+            if (!Instance.ClientSide && !__instance.IsOwner)
+                return false;
 
-        internal static void a(int songId, BoomboxItem boombox)
+            var clips = AudioManager.AudioClips;
+            if (Instance.IncludeVanilla)
+                clips = clips.Concat(AudioManager.VanillaAudioClips).ToList();
+            var clip = clips[__instance.musicRandomizer.Next(clips.Count)];
+
+            if (ModNetworkBehaviour.Instance != null)
+                if (clip.VanillaId != null)
+                    ModNetworkBehaviour.Instance.StartPlayingVanillaMusicServerRpc(
+                        __instance.NetworkObject,
+                        clip.VanillaId.Value
+                    );
+                else if (clip.Crc != null)
+                    ModNetworkBehaviour.Instance.StartPlayingMusicServerRpc(
+                        __instance.NetworkObject,
+                        clip.Crc.Value
+                    );
+                else
+                    Logger.LogWarning($"AudioFile doesn't have CRC nor VanillaID: {clip}");
+            else
+            {
+                __instance.boomboxAudio.clip = clip.AudioClip;
+                __instance.boomboxAudio.pitch = 1f;
+                __instance.boomboxAudio.Play();
+                __instance.isBeingUsed = __instance.isPlayingMusic = startMusic;
+                a(clip, __instance);
+            }
+
+            return false;
+        }
+
+        private static void a(AudioFile audioFile, BoomboxItem boombox)
         {
             if (
                 !GameNetworkManager.Instance
@@ -106,26 +183,33 @@ public class CustomBoomboxMusic : BaseUnityPlugin
                 || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
             )
                 return;
-            Logger.LogDebug($">> BoomboxPlayPatch(#{songId}, {boombox})");
+            Logger.LogDebug($">> BoomboxPlayPatch({audioFile}, {boombox})");
             if (
                 Vector3.Distance(
                     boombox.boomboxAudio.transform.position,
                     GameNetworkManager.Instance.localPlayerController.transform.position
                 ) <= boombox.boomboxAudio.maxDistance
             )
-                AnnouncePlaying(songId);
+                AnnouncePlaying(audioFile);
         }
     }
 
-    internal static void AnnouncePlaying(int songId)
+    internal static void AnnouncePlaying(AudioFile audioFile)
     {
         if (!Instance.DisplayNowPlaying)
             return;
-        var audioFiles = AudioManager.AudioFiles;
-        if (songId >= audioFiles.Count || songId < 0)
-            return;
-        var name = Path.GetFileNameWithoutExtension(audioFiles[songId].FilePath);
+        var name = audioFile.Name;
         Logger.LogInfo($"Now playing: {name}");
         HUDManager.Instance.DisplayTip("Now playing:", $"{name}");
+    }
+
+    internal static void AnnounceMissing(string missingName)
+    {
+        Logger.LogWarning($"Missing audio for {missingName}");
+        HUDManager.Instance.DisplayTip(
+            "Missing audio:",
+            $"{missingName} could not be played",
+            true
+        );
     }
 }

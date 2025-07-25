@@ -12,22 +12,13 @@ namespace CustomBoomboxMusic;
 public static class AudioManager
 {
     private static List<AudioFile> audioClips = [];
-    public static IReadOnlyList<AudioClip> AudioClips =>
-        (CustomBoomboxMusic.Instance.IncludeVanilla || audioClips.Count == 0) && vanilla != null
-            ? audioClips.Select(f => f.AudioClip).Concat(vanilla).ToList()
-            : audioClips.Select(f => f.AudioClip).ToList();
-    public static IReadOnlyList<AudioFile> AudioFiles =>
-        (CustomBoomboxMusic.Instance.IncludeVanilla || audioClips.Count == 0) && vanilla != null
-            ? audioClips
-                .Concat(
-                    vanilla.Select(
-                        (f, i) => new AudioFile(0, f, $"Boombox {i + 1} (Lethal Company).ogg")
-                    )
-                )
-                .ToList()
-            : audioClips;
+    public static IReadOnlyList<AudioFile> AudioClips => audioClips;
 
-    internal static AudioClip[]? vanilla = null;
+    internal const string VANILLA_AUDIO_CLIP_NAME = "Boombox {0} (Lethal Company)";
+
+    internal static AudioClip[]? vanillaAudioClips = null;
+    public static IReadOnlyList<AudioFile> VanillaAudioClips =>
+        vanillaAudioClips?.Select((clip, i) => new AudioFile(i, clip)).ToList() ?? [];
 
     internal static void Reload()
     {
@@ -42,7 +33,7 @@ public static class AudioManager
         if (!Directory.Exists(path))
             return 0;
         CustomBoomboxMusic.Logger.LogDebug($">> ProcessDirectory({Path.GetFullPath(path)})");
-        int i = Directory.GetDirectories(path).Sum(ProcessDirectory);
+        var i = Directory.GetDirectories(path).Sum(ProcessDirectory);
         if (
             Path.GetFileName(path)
                 .Equals(
@@ -56,7 +47,7 @@ public static class AudioManager
 
     private static bool ProcessFile(string path)
     {
-        AudioType audioType = Path.GetExtension(path).ToLower() switch
+        var audioType = Path.GetExtension(path).ToLower() switch
         {
             ".ogg" => AudioType.OGGVORBIS,
             ".mp3" => AudioType.MPEG,
@@ -78,7 +69,7 @@ public static class AudioManager
         webRequest.SendWebRequest();
         while (!webRequest.isDone) { }
 
-        if (webRequest.error != null)
+        if (webRequest.result != UnityWebRequest.Result.Success)
         {
             CustomBoomboxMusic.Logger.LogError(
                 $"Error loading {Path.GetFullPath(path)}: {webRequest.error}"
@@ -105,4 +96,14 @@ public static class AudioManager
         );
         return false;
     }
+
+    public static bool TryGetCrc(uint crc, out AudioFile audioClip) =>
+        (audioClip = AudioClips.FirstOrDefault(i => i.Crc != null && i.Crc.Value == crc)!) != null;
+
+    public static bool TryGetVanillaId(int vanillaId, out AudioFile audioClip) =>
+        (
+            audioClip = VanillaAudioClips.FirstOrDefault(i =>
+                i.VanillaId != null && i.VanillaId.Value == vanillaId
+            )!
+        ) != null;
 }
