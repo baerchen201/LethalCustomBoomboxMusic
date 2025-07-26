@@ -180,19 +180,36 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
         private static void a(AudioFile audioFile, BoomboxItem boombox)
         {
+            Logger.LogDebug(
+                $">> BoomboxPlayPatch({audioFile}, {boombox}) IsOwner:{boombox.IsOwner}"
+            );
             if (
-                !GameNetworkManager.Instance
-                || !GameNetworkManager.Instance.localPlayerController
-                || GameNetworkManager.Instance.localPlayerController.isPlayerDead
-                || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
+                GameNetworkManager.Instance?.localPlayerController == null
+                || (
+                    GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                    && !GameNetworkManager.Instance.localPlayerController.hasBegunSpectating
+                )
             )
                 return;
-            Logger.LogDebug($">> BoomboxPlayPatch({audioFile}, {boombox})");
             if (
                 Vector3.Distance(
                     boombox.boomboxAudio.transform.position,
-                    GameNetworkManager.Instance.localPlayerController.transform.position
+                    GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                        ? GameNetworkManager
+                            .Instance
+                            .localPlayerController
+                            .spectatedPlayerScript
+                            .transform
+                            .position
+                        : GameNetworkManager.Instance.localPlayerController.transform.position
                 ) <= boombox.boomboxAudio.maxDistance
+                || boombox.IsOwner
+                || boombox.OwnerClientId
+                    == GameNetworkManager
+                        .Instance
+                        .localPlayerController
+                        .spectatedPlayerScript
+                        .actualClientId
             )
                 AnnouncePlaying(audioFile);
         }

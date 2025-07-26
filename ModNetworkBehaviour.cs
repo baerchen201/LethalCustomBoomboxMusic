@@ -20,44 +20,48 @@ public class ModNetworkBehaviour : NetworkBehaviour
 
     private static void Play(BoomboxItem boombox, AudioFile clip)
     {
+        CustomBoomboxMusic.Logger.LogDebug($">> Play({boombox}, {clip}) IsOwner:{boombox.IsOwner}");
         boombox.boomboxAudio.clip = clip.AudioClip;
         boombox.boomboxAudio.pitch = 1f;
         boombox.boomboxAudio.Play();
         boombox.isBeingUsed = boombox.isPlayingMusic = true;
+
         if (
-            !GameNetworkManager.Instance
-            || !GameNetworkManager.Instance.localPlayerController
-            || GameNetworkManager.Instance.localPlayerController.isPlayerDead
-            || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
+            GameNetworkManager.Instance?.localPlayerController == null
+            || (
+                GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                && !GameNetworkManager.Instance.localPlayerController.hasBegunSpectating
+            )
         )
             return;
-        CustomBoomboxMusic.Logger.LogDebug($">> Play({boombox}, {clip})");
         if (
             Vector3.Distance(
                 boombox.boomboxAudio.transform.position,
-                GameNetworkManager.Instance.localPlayerController.transform.position
+                GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                    ? GameNetworkManager
+                        .Instance
+                        .localPlayerController
+                        .spectatedPlayerScript
+                        .transform
+                        .position
+                    : GameNetworkManager.Instance.localPlayerController.transform.position
             ) <= boombox.boomboxAudio.maxDistance
+            || boombox.IsOwner
+            || boombox.OwnerClientId
+                == GameNetworkManager
+                    .Instance
+                    .localPlayerController
+                    .spectatedPlayerScript
+                    .actualClientId
         )
             CustomBoomboxMusic.AnnouncePlaying(clip);
     }
 
     private static void PlayFallback(BoomboxItem boombox, string missingName)
     {
-        if (
-            !GameNetworkManager.Instance
-            || !GameNetworkManager.Instance.localPlayerController
-            || GameNetworkManager.Instance.localPlayerController.isPlayerDead
-            || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
-        )
-            return;
-        CustomBoomboxMusic.Logger.LogDebug($">> PlayFallback({boombox}, {missingName})");
-        if (
-            Vector3.Distance(
-                boombox.boomboxAudio.transform.position,
-                GameNetworkManager.Instance.localPlayerController.transform.position
-            ) <= boombox.boomboxAudio.maxDistance
-        )
-            CustomBoomboxMusic.AnnounceMissing(missingName);
+        CustomBoomboxMusic.Logger.LogDebug(
+            $">> PlayFallback({boombox}, {missingName}) IsOwner:{boombox.IsOwner}"
+        );
 
         boombox.boomboxAudio.clip = boombox.musicAudios[
             boombox.musicRandomizer.Next(boombox.musicAudios.Length)
@@ -65,6 +69,36 @@ public class ModNetworkBehaviour : NetworkBehaviour
         boombox.boomboxAudio.pitch = 1f;
         boombox.boomboxAudio.Play();
         boombox.isBeingUsed = boombox.isPlayingMusic = true;
+
+        if (
+            GameNetworkManager.Instance?.localPlayerController == null
+            || (
+                GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                && !GameNetworkManager.Instance.localPlayerController.hasBegunSpectating
+            )
+        )
+            return;
+        if (
+            Vector3.Distance(
+                boombox.boomboxAudio.transform.position,
+                GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                    ? GameNetworkManager
+                        .Instance
+                        .localPlayerController
+                        .spectatedPlayerScript
+                        .transform
+                        .position
+                    : GameNetworkManager.Instance.localPlayerController.transform.position
+            ) <= boombox.boomboxAudio.maxDistance
+            || boombox.IsOwner
+            || boombox.OwnerClientId
+                == GameNetworkManager
+                    .Instance
+                    .localPlayerController
+                    .spectatedPlayerScript
+                    .actualClientId
+        )
+            CustomBoomboxMusic.AnnounceMissing(missingName);
     }
 
     [ServerRpc(RequireOwnership = false)]

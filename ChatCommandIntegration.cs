@@ -154,28 +154,10 @@ public class BoomboxCommand : Command
             boombox.boomboxAudio.pitch = 1f;
             boombox.boomboxAudio.Play();
             boombox.isBeingUsed = boombox.isPlayingMusic = true;
-            a(clip);
+            CustomBoomboxMusic.AnnouncePlaying(clip);
+            return true;
         }
 
         return false;
-
-        void a(AudioFile audioFile)
-        {
-            if (
-                !GameNetworkManager.Instance
-                || !GameNetworkManager.Instance.localPlayerController
-                || GameNetworkManager.Instance.localPlayerController.isPlayerDead
-                || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
-            )
-                return;
-            CustomBoomboxMusic.Logger.LogDebug($">> Play({audioFile}, {boombox})");
-            if (
-                Vector3.Distance(
-                    boombox.boomboxAudio.transform.position,
-                    GameNetworkManager.Instance.localPlayerController.transform.position
-                ) <= boombox.boomboxAudio.maxDistance
-            )
-                CustomBoomboxMusic.AnnouncePlaying(audioFile);
-        }
     }
 }
