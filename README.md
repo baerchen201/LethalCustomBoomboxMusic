@@ -75,7 +75,7 @@ Example:
   "version_number": "1.0.0",
   "website_url": "",
   "description": "My cool boombox music plugin",
-  "dependencies": ["baer1-CustomBoomboxMusic-1.0.0"]
+  "dependencies": ["baer1-CustomBoomboxMusic-2.0.0"]
 }
 ```
 
