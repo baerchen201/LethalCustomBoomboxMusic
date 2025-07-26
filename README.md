@@ -90,3 +90,11 @@ You can verify your manifest.json file [here](https://thunderstore.io/tools/mani
 Simply zip the contents of your folder and upload them to [thunderstore.io](https://thunderstore.io/package/create/)
 
 You should be able to install it through your mod manager after about 3 hours
+
+## Chat commands
+
+This mod has optional support for chat commands, which allow you to reload all audio files at runtime.
+
+This is especially convenient for creating your own mod, but it can be generally useful as well (not really I was just bored and added this, maybe in the future).
+
+Simply installing [ChatCommandAPI](https://thunderstore.io/c/lethal-company/p/baer1/ChatCommandAPI/) will enable this feature

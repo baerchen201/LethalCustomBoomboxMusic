@@ -1,5 +1,6 @@
 using System.Linq;
 using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -9,6 +10,7 @@ using UnityEngine;
 namespace CustomBoomboxMusic;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+[BepInDependency("baer1.ChatCommandAPI", BepInDependency.DependencyFlags.SoftDependency)]
 public class CustomBoomboxMusic : BaseUnityPlugin
 {
     public static CustomBoomboxMusic Instance { get; private set; } = null!;
@@ -66,6 +68,9 @@ public class CustomBoomboxMusic : BaseUnityPlugin
         AudioManager.Reload();
 
         ModNetworkBehaviour.InitializeRPCS_ModNetworkBehaviour();
+
+        if (Chainloader.PluginInfos.ContainsKey("baer1.ChatCommandAPI"))
+            ChatCommandIntegration.Init();
 
         Harmony ??= new Harmony(MyPluginInfo.PLUGIN_GUID);
         Logger.LogDebug("Patching...");
