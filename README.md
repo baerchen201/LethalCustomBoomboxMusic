@@ -4,6 +4,10 @@
 
 The original [Custom Boombox Music](https://thunderstore.io/c/lethal-company/p/Steven/Custom_Boombox_Music/) mod is not directly compatible with mods installed via Thunderstore Mod Manager or r2modman. This mod aims to fix that, and generally provide more stability and reliability.
 
+This mod is completely compatible with most other mods for custom boombox music, however they will display as `Boombox <number> (Lethal Company)`.
+
+Most of the time you can simply rename the folder from `Custom Songs` (or any other name) to `CustomBoomboxMusic` and it should be picked up by this mod without any other modifications.
+
 ## IMPORTANT (READ IF CREATING MODPACK)
 
 **By default, this mod is completely client-sided, however it supports track synchronization.**
