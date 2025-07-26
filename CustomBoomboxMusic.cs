@@ -203,10 +203,10 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
     internal static void AnnouncePlaying(AudioFile audioFile)
     {
-        if (!Instance.DisplayNowPlaying)
-            return;
         var name = audioFile.Name;
         Logger.LogInfo($"Now playing: {name}");
+        if (!Instance.DisplayNowPlaying)
+            return;
         HUDManager.Instance.DisplayTip("Now playing:", $"{name}");
     }
 
