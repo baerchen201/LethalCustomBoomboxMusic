@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ChatCommandAPI;
 using HarmonyLib;
+using UnityEngine;
 
 namespace CustomBoomboxMusic;
 
@@ -52,6 +54,26 @@ public class BoomboxCommand : Command
                         $"> {clip.Name} - {clip.FilePath} (CRC32: {clip.Crc})"
                     );
                 break;
+            case "play":
+                error = "Invalid arguments";
+                if (args.Length < 2)
+                    return false;
+                error = "You need to be holding a boombox";
+                GrabbableObject? boomboxObject;
+                if (
+                    (
+                        boomboxObject = GameNetworkManager
+                            .Instance
+                            ?.localPlayerController
+                            ?.currentlyHeldObjectServer
+                    ) == null
+                )
+                    return false;
+                if (!boomboxObject.gameObject.TryGetComponent<BoomboxItem>(out var boombox))
+                    return false;
+
+                error = "Track could not be found";
+                return Play(args[1..].Join(null, " "), boombox);
             default:
                 ChatCommandAPI.ChatCommandAPI.PrintError(
                     "Invalid subcommand, use /help for usage information"
@@ -63,5 +85,88 @@ public class BoomboxCommand : Command
 
         string a(int count) => count == 0 ? "No tracks" : $"{count} track{b(count)}";
         string b(int count) => count == 1 ? string.Empty : "s";
+    }
+
+    private static bool Play(string identifier, BoomboxItem boombox)
+    {
+        var files = AudioManager.AudioClips;
+        if (CustomBoomboxMusic.Instance.IncludeVanilla || files.Count == 0)
+            files = files.Concat(AudioManager.VanillaAudioClips(boombox)).ToList();
+        List<AudioFile?> clips = [];
+        if (uint.TryParse(identifier, out var crc))
+            if (AudioManager.TryGetCrc(crc, out var clip))
+                clips.Add(clip);
+        if (clips.Count == 0)
+            clips.AddRange(
+                files.Where(i =>
+                    string.Equals(i.Name, identifier, StringComparison.CurrentCultureIgnoreCase)
+                )
+            );
+        if (clips.Count == 0)
+            clips.AddRange(
+                files.Where(i =>
+                    i.Name.StartsWith(identifier, StringComparison.CurrentCultureIgnoreCase)
+                )
+            );
+        if (clips.Count == 0)
+            return false;
+
+        foreach (var clip in clips)
+        {
+            if (clip == null)
+                continue;
+            if (ModNetworkBehaviour.Instance != null)
+            {
+                if (clip.VanillaId != null)
+                    ModNetworkBehaviour.Instance.StartPlayingVanillaMusicServerRpc(
+                        boombox.NetworkObject,
+                        clip.VanillaId.Value
+                    );
+                else if (clip.Crc != null)
+                    ModNetworkBehaviour.Instance.StartPlayingMusicServerRpc(
+                        boombox.NetworkObject,
+                        clip.Crc.Value,
+                        clip.Name
+                    );
+                else
+                {
+                    CustomBoomboxMusic.Logger.LogWarning(
+                        $"AudioFile doesn't have CRC nor VanillaID: {clip}"
+                    );
+                    continue;
+                }
+
+                return true;
+            }
+
+            if (!boombox.isBeingUsed)
+                boombox.ActivateItemServerRpc(true, true);
+            boombox.boomboxAudio.clip = clip.AudioClip;
+            boombox.boomboxAudio.pitch = 1f;
+            boombox.boomboxAudio.Play();
+            boombox.isBeingUsed = boombox.isPlayingMusic = true;
+            a(clip);
+        }
+
+        return false;
+
+        void a(AudioFile audioFile)
+        {
+            if (
+                !GameNetworkManager.Instance
+                || !GameNetworkManager.Instance.localPlayerController
+                || GameNetworkManager.Instance.localPlayerController.isPlayerDead
+                || !GameNetworkManager.Instance.localPlayerController.isPlayerControlled
+            )
+                return;
+            CustomBoomboxMusic.Logger.LogDebug($">> Play({audioFile}, {boombox})");
+            if (
+                Vector3.Distance(
+                    boombox.boomboxAudio.transform.position,
+                    GameNetworkManager.Instance.localPlayerController.transform.position
+                ) <= boombox.boomboxAudio.maxDistance
+            )
+                CustomBoomboxMusic.AnnouncePlaying(audioFile);
+        }
     }
 }
