@@ -100,7 +100,7 @@ Command usages and examples:
 ```
 /boo[mbox] r[eload] - completely reloads all audio files, freezes the game
 /boo[mbox] l[ist] - list all loaded tracks
-/boo[mbox] p[lay] <track> - Plays a specific track by CRC32 or name, Example: /boo p Boombox 5 - plays boombox 5 from vanilla lethal company
+/boo[mbox] p[lay] <track> - Plays a specific track by CRC32 or name, Example: '/boo p Boombox 5' - plays boombox 5 from vanilla lethal company
 /boo[mbox] v[ersion] - Displays version information
 ```
 
