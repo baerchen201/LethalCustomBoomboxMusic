@@ -19,7 +19,16 @@ public class BoomboxCommand : Command
 {
     public override string Name => "Boombox";
     public override string Description => "Various commands for the CustomBoomboxMusic mod";
-    public override string[] Syntax => ["reload", "version", "list"];
+    public override string[] Commands =>
+        [
+            Name.ToLower(),
+            "boo",
+            "boom",
+            "boomb",
+            "boombo",
+            "boobs", // I had to
+        ];
+    public override string[] Syntax => ["play <track>", "reload", "version", "list"];
 
     public override bool Invoke(string[] args, Dictionary<string, string> kwargs, out string? error)
     {
@@ -54,7 +63,7 @@ public class BoomboxCommand : Command
                         $"> {clip.Name} - {clip.FilePath} (CRC32: {clip.Crc})"
                     );
                 break;
-            case "play":
+            case "play" or "p":
                 error = "Invalid arguments";
                 if (args.Length < 2)
                     return false;
