@@ -16,9 +16,8 @@ public static class AudioManager
 
     internal const string VANILLA_AUDIO_CLIP_NAME = "Boombox {0} (Lethal Company)";
 
-    internal static AudioClip[]? vanillaAudioClips = null;
-    public static IReadOnlyList<AudioFile> VanillaAudioClips =>
-        vanillaAudioClips?.Select((clip, i) => new AudioFile(i, clip)).ToList() ?? [];
+    public static IReadOnlyList<AudioFile> VanillaAudioClips(BoomboxItem boombox) =>
+        boombox.musicAudios.Select((clip, i) => new AudioFile(i, clip)).ToList();
 
     internal static void Reload()
     {
@@ -100,10 +99,13 @@ public static class AudioManager
     public static bool TryGetCrc(uint crc, out AudioFile audioClip) =>
         (audioClip = AudioClips.FirstOrDefault(i => i.Crc != null && i.Crc.Value == crc)!) != null;
 
-    public static bool TryGetVanillaId(int vanillaId, out AudioFile audioClip) =>
+    public static bool TryGetVanillaId(
+        BoomboxItem boombox,
+        int vanillaId,
+        out AudioFile audioClip
+    ) =>
         (
-            audioClip = VanillaAudioClips.FirstOrDefault(i =>
-                i.VanillaId != null && i.VanillaId.Value == vanillaId
-            )!
+            audioClip = VanillaAudioClips(boombox)
+                .FirstOrDefault(i => i.VanillaId != null && i.VanillaId.Value == vanillaId)!
         ) != null;
 }

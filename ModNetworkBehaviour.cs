@@ -300,7 +300,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
         }
         CustomBoomboxMusic.Logger.LogDebug($"   {boombox}");
 
-        if (!AudioManager.TryGetVanillaId(vanillaId, out var clip))
+        if (!AudioManager.TryGetVanillaId(boombox, vanillaId, out var clip))
         {
             CustomBoomboxMusic.Logger.LogWarning(
                 $"Couldn't find AudioClip with vanillaId {vanillaId}, playing fallback"

@@ -127,14 +127,6 @@ public class CustomBoomboxMusic : BaseUnityPlugin
         }
     }
 
-    [HarmonyPatch(typeof(BoomboxItem), nameof(BoomboxItem.ItemActivate))]
-    internal class BoomboxUsePatch
-    {
-        // ReSharper disable once UnusedMember.Local
-        private static void Prefix(ref BoomboxItem __instance) =>
-            AudioManager.vanillaAudioClips ??= (AudioClip[])__instance.musicAudios.Clone();
-    }
-
     [HarmonyPatch(typeof(BoomboxItem), nameof(BoomboxItem.StartMusic))]
     internal class BoomboxPlayPatch
     {
@@ -152,7 +144,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
             var clips = AudioManager.AudioClips;
             if (Instance.IncludeVanilla)
-                clips = clips.Concat(AudioManager.VanillaAudioClips).ToList();
+                clips = clips.Concat(AudioManager.VanillaAudioClips(__instance)).ToList();
             var clip = clips[__instance.musicRandomizer.Next(clips.Count)];
 
             if (ModNetworkBehaviour.Instance != null)
