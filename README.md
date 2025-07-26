@@ -1,16 +1,16 @@
 ## About
 
-**This mod is intended for easy creation of mods, that add more songs to the Boombox item.**
+**This mod is intended to simplify the creation of mods, that add more songs to the Boombox.**
 
-The [Custom Boombox Music](https://thunderstore.io/c/lethal-company/p/Steven/Custom_Boombox_Music/) mod is not directly compatible with mods installed via Thunderstore Mod Manager or r2modman. This mod aims to fix that, and generally provide more stability and reliability.
+The original [Custom Boombox Music](https://thunderstore.io/c/lethal-company/p/Steven/Custom_Boombox_Music/) mod is not directly compatible with mods installed via Thunderstore Mod Manager or r2modman. This mod aims to fix that, and generally provide more stability and reliability.
 
 ## IMPORTANT (READ IF CREATING MODPACK)
 
-**By default, this mod is completely client-sided, however it supports basic settings synchronisation.**
+**By default, this mod is completely client-sided, however it supports track synchronization.**
 
-If everyone has this mod, simply installing [CSync](https://thunderstore.io/c/lethal-company/p/Sigurd/CSync/) is recommended, as it will synchronize the settings with the host.
+If everyone has this mod, simply disabling the `ClientSide` config value is recommended, as it will synchronize the currently playing track among all players.
 
-_Verification of music files might be added in a future release, that way it is guaranteed that everyone hears the same music._
+That way it is guaranteed that everyone hears the same music, and there is basically no risk of the "playlist" de-syncing.
 
 ## Usage (creating your music mod)
 
@@ -31,11 +31,24 @@ MyPlugin
 
 It is recommended to name your music files as shown (`Artist - Title (Source)`), since the user will see a "Now Playing" popup displaying the file name.
 
+Example:
+```
+Now Playing:
+Example Artist - Example Song (Example Game)
+```
+
+If synchronization is enabled, but you do not have the corresponding song loaded, a warning will be displayed and a placeholder song will play instead:
+```
+Missing audio:
+Example Artist - Example Song (Example Game)
+(CRC32: 12345678) could not be played
+```
+
 The following file extensions are supported:
  - `.mp3`
- - `.ogg`
+ - `.ogg` (vorbis)
  - `.wav`
- - `.m4a`
+ - `.m4a` (aac)
  - `.aiff`
 
 ### manifest.json:
