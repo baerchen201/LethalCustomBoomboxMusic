@@ -143,7 +143,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
                 return false;
 
             var clips = AudioManager.AudioClips;
-            if (Instance.IncludeVanilla)
+            if (Instance.IncludeVanilla || clips.Count == 0)
                 clips = clips.Concat(AudioManager.VanillaAudioClips(__instance)).ToList();
             var clip = clips[__instance.musicRandomizer.Next(clips.Count)];
 
