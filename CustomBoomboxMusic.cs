@@ -27,7 +27,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     public bool IncludeVanilla => includeVanilla.Value;
 
     private ConfigEntry<bool> clientSide = null!;
-    public bool ClientSide => clientSide.Value;
+    public bool ClientSide { get; private set; }
 
     private void Awake()
     {
@@ -58,6 +58,10 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             true,
             "Enables or disables custom networking to more accurately sync which song is currently playing"
         );
+        ClientSide = clientSide.Value;
+        clientSide.SettingChanged += (_, _) =>
+            Logger.LogWarning("ClientSide requires a restart of the game to apply");
+        Logger.LogInfo($"Client-side mode {(ClientSide ? "enabled" : "disabled")}");
 
         AudioManager.Reload();
 
