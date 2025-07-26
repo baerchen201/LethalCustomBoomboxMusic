@@ -84,7 +84,9 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             if (Instance.ClientSide || networkPrefab != null)
                 return;
 
-            networkPrefab = new GameObject();
+            networkPrefab = new GameObject(
+                $"{MyPluginInfo.PLUGIN_GUID}-{nameof(ModNetworkBehaviour)}"
+            );
             networkPrefab.AddComponent<NetworkObject>();
             networkPrefab.AddComponent<ModNetworkBehaviour>();
 
