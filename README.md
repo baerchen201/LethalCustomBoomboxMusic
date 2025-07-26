@@ -93,8 +93,15 @@ You should be able to install it through your mod manager after about 3 hours
 
 ## Chat commands
 
-This mod has optional support for chat commands, which allow you to reload all audio files at runtime.
+This mod has optional support for chat commands, which allow you to play specific tracks at will or dynamically reload all audio files.
 
-This is especially convenient for creating your own mod, but it can be generally useful as well (not really I was just bored and added this, maybe in the future).
+Command usages and examples:
+
+```
+/boo[mbox] r[eload] - completely reloads all audio files, freezes the game
+/boo[mbox] l[ist] - list all loaded tracks
+/boo[mbox] p[lay] <track> - Plays a specific track by CRC32 or name, Example: /boo p Boombox 5 - plays boombox 5 from vanilla lethal company
+/boo[mbox] v[ersion] - Displays version information
+```
 
 Simply installing [ChatCommandAPI](https://thunderstore.io/c/lethal-company/p/baer1/ChatCommandAPI/) will enable this feature
