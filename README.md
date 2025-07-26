@@ -28,12 +28,12 @@ MyPlugin
 └── BepInEx
     └── plugins
         └── CustomBoomboxMusic (Your music files go in here)
-            ├── Artist - Title.mp3
+            ├── Artist - Title (Album).mp3
             ├── Example Artist - Example Song (Example Game).ogg
-            └── music.m4a
+            └── Composer - Title [Remix, Slowed, Looped].m4a
 ```
 
-It is recommended to name your music files as shown (`Artist - Title (Source)`), since the user will see a "Now Playing" popup displaying the file name.
+It is recommended to name your music files as shown (`Artist - Title (Album/Source) [Modifications]`), since the user will see a "Now Playing" popup displaying the file name.
 
 Example:
 ```
