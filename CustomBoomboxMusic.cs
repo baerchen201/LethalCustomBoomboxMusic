@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using EasyTextEffects.Editor.MyBoxCopy.Extensions;
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
@@ -30,6 +33,9 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     private ConfigEntry<bool> includeVanilla = null!;
     public bool IncludeVanilla => includeVanilla.Value;
 
+    private ConfigEntry<bool> newRNG = null!;
+    public bool NewRNG => newRNG.Value;
+
     private ConfigEntry<bool> clientSide = null!;
     public bool ClientSide { get; private set; }
 
@@ -55,6 +61,13 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             "IncludeVanilla",
             true,
             "Includes vanilla music (forced true if no custom music is present)"
+        );
+        includeVanilla.SettingChanged += (_, _) => BoomboxPlayPatch.rng = new();
+        newRNG = Config.Bind(
+            "General",
+            "NewRNG",
+            true,
+            "Enables an improved RNG which prevents repeats"
         );
         clientSide = Config.Bind(
             "General",
@@ -83,7 +96,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     }
 
     [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
-    internal class StartPatch
+    internal static class StartPatch
     {
         // ReSharper disable once UnusedMember.Local
         private static void Postfix()
@@ -110,7 +123,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     private static GameObject networkPrefab = null!;
 
     [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
-    internal class InitPatch
+    internal static class InitPatch
     {
         // ReSharper disable once UnusedMember.Local
         private static void Postfix()
@@ -135,8 +148,70 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     }
 
     [HarmonyPatch(typeof(BoomboxItem), nameof(BoomboxItem.StartMusic))]
-    internal class BoomboxPlayPatch
+    internal static class BoomboxPlayPatch
     {
+        private static IReadOnlyList<AudioFile> GetClips(BoomboxItem __instance)
+        {
+            var clips = AudioManager.AudioClips;
+            if (Instance.IncludeVanilla || clips.Count == 0)
+                clips = clips.Concat(AudioManager.VanillaAudioClips(__instance)).ToList();
+            return clips;
+        }
+
+        internal static ConditionalWeakTable<BoomboxItem, IEnumerator<AudioFile>> rng = new();
+
+        private static IEnumerator<AudioFile> RNG(BoomboxItem __instance)
+        {
+            var clips = GetClips(__instance);
+            Logger.LogDebug($">> RNG({__instance}) clips.Count: {clips.Count}");
+            var clipIds = Enumerable.Range(0, clips.Count).ToList();
+            while (clipIds.Count > 0)
+            {
+                var i = __instance.musicRandomizer.Next(clipIds.Count);
+                var id = clipIds[i];
+                clipIds.RemoveAt(i);
+                Logger.LogDebug(
+                    $"Requested new RNG Value for {__instance}: {id} ({clipIds.Count} remaining)"
+                );
+                yield return clips[id];
+            }
+        }
+
+        private static AudioFile OldRNG(BoomboxItem __instance)
+        {
+            var clips = GetClips(__instance);
+            Logger.LogDebug($">> OldRNG({__instance}) clips.Count: {clips.Count}");
+            return clips[__instance.musicRandomizer.Next(clips.Count)];
+        }
+
+        private static AudioFile GetNextClip(BoomboxItem __instance)
+        {
+            Logger.LogDebug($">> GetNextClip({__instance})");
+            if (!Instance.NewRNG)
+                return OldRNG(__instance);
+            if (!rng.TryGetValue(__instance, out var enumerator))
+            {
+                Logger.LogDebug("   Failed to obtain enumerator, creating new...");
+                create();
+            }
+
+            var clip = enumerator.Current!;
+            Logger.LogDebug($"   Got clip: {clip}");
+            if (!enumerator.MoveNext())
+            {
+                Logger.LogDebug("   Failed to advance RNG, creating new...");
+                create();
+            }
+
+            return clip;
+
+            void create()
+            {
+                rng.AddOrUpdate(__instance, enumerator = RNG(__instance));
+                enumerator.MoveNext();
+            }
+        }
+
         // ReSharper disable once UnusedMember.Local
         private static bool Prefix(
             ref BoomboxItem __instance,
@@ -149,10 +224,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             if (!Instance.ClientSide && !__instance.IsOwner)
                 return false;
 
-            var clips = AudioManager.AudioClips;
-            if (Instance.IncludeVanilla || clips.Count == 0)
-                clips = clips.Concat(AudioManager.VanillaAudioClips(__instance)).ToList();
-            var clip = clips[__instance.musicRandomizer.Next(clips.Count)];
+            var clip = GetNextClip(__instance);
 
             if (ModNetworkBehaviour.Instance != null)
                 if (clip.VanillaId != null)

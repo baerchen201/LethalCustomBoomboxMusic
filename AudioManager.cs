@@ -26,6 +26,7 @@ public static class AudioManager
         audioClips.Clear();
         ProcessDirectory(Paths.BepInExRootPath);
         audioClips = audioClips.OrderBy(f => f.Crc).ToList();
+        CustomBoomboxMusic.BoomboxPlayPatch.rng = new();
     }
 
     private static int ProcessDirectory(string path)
