@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using BepInEx;
 using HarmonyLib;
+using LethalModUtils;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -46,54 +47,25 @@ public static class AudioManager
 
     private static bool ProcessFile(string path)
     {
-        var audioType = Path.GetExtension(path).ToLower() switch
+        path = Path.GetFullPath(path);
+        CustomBoomboxMusic.Logger.LogDebug($">> ProcessFile({path})");
+        try
         {
-            ".ogg" => AudioType.OGGVORBIS,
-            ".mp3" => AudioType.MPEG,
-            ".wav" => AudioType.WAV,
-            ".m4a" => AudioType.ACC,
-            ".aiff" => AudioType.AIFF,
-            _ => AudioType.UNKNOWN,
-        };
-        CustomBoomboxMusic.Logger.LogDebug(
-            $">> ProcessFile({Path.GetFullPath(path)}) audioType:{audioType}"
-        );
-        if (audioType == AudioType.UNKNOWN)
-            return false;
-
-        var webRequest = UnityWebRequestMultimedia.GetAudioClip(path, audioType);
-        ((DownloadHandlerAudioClip)webRequest.downloadHandler).streamAudio = !CustomBoomboxMusic
-            .Instance
-            .LoadIntoRAM;
-        webRequest.SendWebRequest();
-        while (!webRequest.isDone) { }
-
-        if (webRequest.result != UnityWebRequest.Result.Success)
-        {
-            CustomBoomboxMusic.Logger.LogError(
-                $"Error loading {Path.GetFullPath(path)}: {webRequest.error}"
+            var audioClip = Audio.Load(
+                new Uri(path),
+                out var webRequest,
+                CustomBoomboxMusic.Instance.LoadTimeOut
             );
-            return false;
-        }
-
-        var audioClip = DownloadHandlerAudioClip.GetContent(webRequest);
-        if (audioClip && audioClip.loadState == AudioDataLoadState.Loaded)
-        {
-            CustomBoomboxMusic.Logger.LogInfo($"Loaded {Path.GetFileName(path)}");
             audioClips.Add(
-                new AudioFile(
-                    Crc32.Calculate(webRequest.downloadHandler.data),
-                    audioClip,
-                    Path.GetFullPath(path)
-                )
+                new AudioFile(Crc32.Calculate(webRequest.downloadHandler.data), audioClip, path)
             );
             return true;
         }
-
-        CustomBoomboxMusic.Logger.LogWarning(
-            $"Error loading {Path.GetFullPath(path)}: {audioClip.loadState}"
-        );
-        return false;
+        catch (Exception e)
+        {
+            CustomBoomboxMusic.Logger.LogWarning($"Couldn't load file {path}: {e}");
+            return false;
+        }
     }
 
     public static bool TryGetCrc(uint crc, out AudioFile audioClip) =>

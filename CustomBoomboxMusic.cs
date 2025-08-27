@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -10,6 +11,7 @@ using UnityEngine;
 namespace CustomBoomboxMusic;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+[BepInDependency("baer1.LethalModUtils")]
 [BepInDependency("baer1.ChatCommandAPI", BepInDependency.DependencyFlags.SoftDependency)]
 public class CustomBoomboxMusic : BaseUnityPlugin
 {
@@ -19,8 +21,8 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
     public const string DIRECTORY_NAME = "CustomBoomboxMusic";
 
-    private ConfigEntry<bool> loadIntoRAM = null!;
-    public bool LoadIntoRAM => loadIntoRAM.Value;
+    private ConfigEntry<float> loadTimeOut = null!;
+    public TimeSpan LoadTimeOut => TimeSpan.FromSeconds(loadTimeOut.Value);
 
     private ConfigEntry<bool> displayNowPlaying = null!;
     public bool DisplayNowPlaying => displayNowPlaying.Value;
@@ -36,11 +38,11 @@ public class CustomBoomboxMusic : BaseUnityPlugin
         Logger = base.Logger;
         Instance = this;
 
-        loadIntoRAM = Config.Bind(
+        loadTimeOut = Config.Bind(
             "General",
-            "LoadIntoRAM",
-            true,
-            "Loads music into RAM, recommended if you use an HDD, not recommended if you have 8GB of RAM or less"
+            "LoadTimeOut",
+            10f,
+            "Maximum amount of time to wait for an audio file to load. Increase this value if you have giant files or are using a slow drive"
         );
         displayNowPlaying = Config.Bind(
             "General",

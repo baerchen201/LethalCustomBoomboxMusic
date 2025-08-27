@@ -48,7 +48,7 @@ Example Artist - Example Song (Example Game)
 (CRC32: 12345678) could not be played
 ```
 
-The following file extensions are supported:
+The following formats are supported:
  - `.mp3`
  - `.ogg` (vorbis)
  - `.wav`
