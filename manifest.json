@@ -1,6 +1,6 @@
 {
   "name": "CustomBoomboxMusic",
-  "version_number": "2.2.1",
+  "version_number": "2.2.2",
   "website_url": "https://github.com/baerchen201/LethalCustomBoomboxMusic",
   "description": "A Lethal Company modding API for easy addition of boombox music",
   "dependencies": [
