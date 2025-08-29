@@ -109,6 +109,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             );
             networkPrefab.AddComponent<NetworkObject>();
             networkPrefab.AddComponent<ModNetworkBehaviour>();
+            networkPrefab.isStatic = true;
 
             DontDestroyOnLoad(networkPrefab);
             networkPrefab.hideFlags = HideFlags.HideAndDontSave;
@@ -142,7 +143,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             }
 
             var networkHandlerHost = Instantiate(networkPrefab, Vector3.zero, Quaternion.identity);
-            networkHandlerHost.GetComponent<NetworkObject>().Spawn();
+            networkHandlerHost.GetComponent<NetworkObject>().Spawn(true);
             Logger.LogDebug("<< InitPatch true");
         }
     }
