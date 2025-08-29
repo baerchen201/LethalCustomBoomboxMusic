@@ -9,11 +9,24 @@ public class ModNetworkBehaviour : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        CustomBoomboxMusic.Logger.LogDebug(
+            $">> OnNetworkSpawn() Instance:{Instance?.ToString() ?? "null"}"
+        );
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-            Instance?.gameObject.GetComponent<NetworkObject>().Despawn();
+            Instance?.gameObject.GetComponent<NetworkObject>()?.Despawn();
         Instance = this;
 
         base.OnNetworkSpawn();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        CustomBoomboxMusic.Logger.LogDebug(
+            $">> OnNetworkDespawn() Instance:{Instance?.ToString() ?? "null"} ==this:{Instance == this}"
+        );
+        if (Instance == this)
+            Instance = null;
+        base.OnNetworkDespawn();
     }
 
     private const uint START_PLAYING_MUSIC_SERVER_RPC_ID = 2501615839U;

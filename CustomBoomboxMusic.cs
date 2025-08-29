@@ -101,6 +101,9 @@ public class CustomBoomboxMusic : BaseUnityPlugin
         // ReSharper disable once UnusedMember.Local
         private static void Postfix()
         {
+            Logger.LogDebug(
+                $">> StartPatch() ClientSide:{Instance.ClientSide} networkPrefab:{a(networkPrefab)}"
+            );
             if (Instance.ClientSide || networkPrefab != null)
                 return;
 
@@ -115,7 +118,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             networkPrefab.hideFlags = HideFlags.HideAndDontSave;
 
             NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
-            Logger.LogDebug($"Registered network prefab {a(networkPrefab)}");
+            Logger.LogDebug($"   Registered network prefab {a(networkPrefab)}");
         }
     }
 
