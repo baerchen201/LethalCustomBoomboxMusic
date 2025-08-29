@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -107,15 +109,15 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             if (Instance.ClientSide || networkPrefab != null)
                 return;
 
-            networkPrefab = new GameObject(
-                $"{MyPluginInfo.PLUGIN_GUID}-{nameof(ModNetworkBehaviour)}"
+            var bundle = AssetBundle.LoadFromFile(
+                Path.Combine(
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
+                    "modnetworkmanager"
+                )
             );
-            networkPrefab.AddComponent<NetworkObject>();
-            networkPrefab.AddComponent<ModNetworkBehaviour>();
-            networkPrefab.isStatic = true;
 
-            DontDestroyOnLoad(networkPrefab);
-            networkPrefab.hideFlags = HideFlags.HideAndDontSave;
+            networkPrefab = bundle.LoadAsset<GameObject>("ModNetworkManager");
+            networkPrefab.AddComponent<ModNetworkBehaviour>();
 
             NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
             Logger.LogDebug($"   Registered network prefab {a(networkPrefab)}");
