@@ -4,7 +4,7 @@
     <AssemblyName>baer1.CustomBoomboxMusic</AssemblyName>
     <Product>CustomBoomboxMusic</Product>
     <!-- Change to whatever version you're currently on. -->
-    <Version>2.2.3</Version>
+    <Version>2.2.4</Version>
   </PropertyGroup>
   <!-- Project Properties -->
   <PropertyGroup>
@@ -47,7 +47,7 @@
       PrivateAssets="all"
     />
     <PackageReference Include="baer1.ChatCommandAPI" Version="0.2.*" />
-    <PackageReference Include="baer1.LethalModUtils" Version="0.0.3" />
+    <PackageReference Include="baer1.LethalModUtils" Version="0.0.5" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
     <PackageReference
