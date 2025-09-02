@@ -1,3 +1,5 @@
+using System;
+using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -17,6 +19,27 @@ public class ModNetworkBehaviour : NetworkBehaviour
         Instance = this;
 
         base.OnNetworkSpawn();
+    }
+
+    public static bool IsInBoomboxRange(BoomboxItem? boombox)
+    {
+        var localPlayer = StartOfRound.Instance?.localPlayerController;
+        CustomBoomboxMusic.Logger.LogDebug(
+            $">> IsInBoomboxRange(boombox: {boombox}) localPlayer:{localPlayer} isPLayerDead:{localPlayer?.isPlayerDead} spectatedPlayerScript:{localPlayer?.spectatedPlayerScript}"
+        );
+
+        return boombox is { boomboxAudio: not null }
+            && localPlayer is { isPlayerDead: false } or { spectatedPlayerScript: not null }
+            && (
+                Vector3.Distance(
+                    boombox.boomboxAudio.transform.position,
+                    localPlayer.isPlayerDead
+                        ? localPlayer.spectatedPlayerScript!.transform.position
+                        : localPlayer.transform.position
+                ) <= boombox.boomboxAudio.maxDistance
+                || boombox.IsOwner
+                || boombox.OwnerClientId == localPlayer.spectatedPlayerScript!.actualClientId
+            );
     }
 
     public override void OnNetworkDespawn()
@@ -47,26 +70,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
             )
         )
             return;
-        if (
-            Vector3.Distance(
-                boombox.boomboxAudio.transform.position,
-                GameNetworkManager.Instance.localPlayerController.isPlayerDead
-                    ? GameNetworkManager
-                        .Instance
-                        .localPlayerController
-                        .spectatedPlayerScript
-                        .transform
-                        .position
-                    : GameNetworkManager.Instance.localPlayerController.transform.position
-            ) <= boombox.boomboxAudio.maxDistance
-            || boombox.IsOwner
-            || boombox.OwnerClientId
-                == GameNetworkManager
-                    .Instance
-                    .localPlayerController
-                    .spectatedPlayerScript
-                    .actualClientId
-        )
+        if (IsInBoomboxRange(boombox))
             CustomBoomboxMusic.AnnouncePlaying(clip);
     }
 
@@ -91,26 +95,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
             )
         )
             return;
-        if (
-            Vector3.Distance(
-                boombox.boomboxAudio.transform.position,
-                GameNetworkManager.Instance.localPlayerController.isPlayerDead
-                    ? GameNetworkManager
-                        .Instance
-                        .localPlayerController
-                        .spectatedPlayerScript
-                        .transform
-                        .position
-                    : GameNetworkManager.Instance.localPlayerController.transform.position
-            ) <= boombox.boomboxAudio.maxDistance
-            || boombox.IsOwner
-            || boombox.OwnerClientId
-                == GameNetworkManager
-                    .Instance
-                    .localPlayerController
-                    .spectatedPlayerScript
-                    .actualClientId
-        )
+        if (IsInBoomboxRange(boombox))
             CustomBoomboxMusic.AnnounceMissing(missingName);
     }
 
