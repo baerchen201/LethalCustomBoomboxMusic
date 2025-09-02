@@ -56,4 +56,14 @@
       PrivateAssets="all"
     />
   </ItemGroup>
+  <!--SpectateEnemies compatibility-->
+  <PropertyGroup>
+    <SpectateEnemiesDll>lib/SpectateEnemy.dll</SpectateEnemiesDll>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(SpectateEnemiesDll)')">
+    <Reference Include="SpectateEnemy" HintPath="$(SpectateEnemiesDll)" />
+  </ItemGroup>
+  <PropertyGroup Condition="Exists('$(SpectateEnemiesDll)')">
+    <DefineConstants>SPECTATE_ENEMIES</DefineConstants>
+  </PropertyGroup>
 </Project>

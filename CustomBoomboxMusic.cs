@@ -18,6 +18,7 @@ namespace CustomBoomboxMusic;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 [BepInDependency("baer1.LethalModUtils")]
 [BepInDependency("baer1.ChatCommandAPI", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(SPECTATE_ENEMIES, BepInDependency.DependencyFlags.SoftDependency)]
 public class CustomBoomboxMusic : BaseUnityPlugin
 {
     public static CustomBoomboxMusic Instance { get; private set; } = null!;
@@ -40,6 +41,8 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 
     private ConfigEntry<bool> clientSide = null!;
     public bool ClientSide { get; private set; }
+
+    private const string SPECTATE_ENEMIES = "SpectateEnemy";
 
     private void Awake()
     {
@@ -82,6 +85,20 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             Logger.LogWarning("ClientSide requires a restart of the game to apply");
         Logger.LogInfo($"Client-side mode {(ClientSide ? "enabled" : "disabled")}");
 
+#if !SPECTATE_ENEMIES
+#warning Missing SpectateEnemies DLL, compiling without SpectateEnemies support
+        (
+            (Action<string>)(
+                Chainloader.PluginInfos.ContainsKey(SPECTATE_ENEMIES)
+                    ? Logger.LogWarning
+                    : Logger.LogDebug
+            )
+        ).Invoke(
+            "This version of the mod was compiled without SpectateEnemies support.\n"
+                + "  If you compiled this mod yourself, you can recompile it with the SpectateEnemies DLL.\n"
+                + "  If you downloaded this mod from an official source, please report this error."
+        );
+#endif
         AudioManager.Reload();
 
         ModNetworkBehaviour.InitializeRPCS_ModNetworkBehaviour();

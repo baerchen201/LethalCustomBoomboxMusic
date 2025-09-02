@@ -1,7 +1,8 @@
-using System;
-using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
+#if SPECTATE_ENEMIES
+using SpectateEnemy;
+#endif
 
 namespace CustomBoomboxMusic;
 
@@ -24,21 +25,39 @@ public class ModNetworkBehaviour : NetworkBehaviour
     public static bool IsInBoomboxRange(BoomboxItem? boombox)
     {
         var localPlayer = StartOfRound.Instance?.localPlayerController;
+#if SPECTATE_ENEMIES
+        var spectatedEnemy =
+            SpectateEnemiesAPI.IsLoaded && SpectateEnemiesAPI.IsSpectatingEnemies
+                ? SpectateEnemiesAPI.CurrentEnemySpectating()
+                : null;
+#endif
         CustomBoomboxMusic.Logger.LogDebug(
             $">> IsInBoomboxRange(boombox: {boombox}) localPlayer:{localPlayer} isPLayerDead:{localPlayer?.isPlayerDead} spectatedPlayerScript:{localPlayer?.spectatedPlayerScript}"
+#if SPECTATE_ENEMIES
+                + $" spectatedEnemy:{spectatedEnemy}"
+#endif
         );
 
         return boombox is { boomboxAudio: not null }
-            && localPlayer is { isPlayerDead: false } or { spectatedPlayerScript: not null }
+            && (
+                localPlayer is { isPlayerDead: false } or { spectatedPlayerScript: not null }
+#if SPECTATE_ENEMIES
+                || spectatedEnemy != null
+#endif
+            )
             && (
                 Vector3.Distance(
                     boombox.boomboxAudio.transform.position,
-                    localPlayer.isPlayerDead
-                        ? localPlayer.spectatedPlayerScript!.transform.position
+#if SPECTATE_ENEMIES
+                        spectatedEnemy != null ? spectatedEnemy.transform.position
+                        :
+#endif
+                        localPlayer!.isPlayerDead
+                            ? localPlayer.spectatedPlayerScript!.transform.position
                         : localPlayer.transform.position
                 ) <= boombox.boomboxAudio.maxDistance
                 || boombox.IsOwner
-                || boombox.OwnerClientId == localPlayer.spectatedPlayerScript!.actualClientId
+                || boombox.OwnerClientId == localPlayer!.spectatedPlayerScript!.actualClientId
             );
     }
 
