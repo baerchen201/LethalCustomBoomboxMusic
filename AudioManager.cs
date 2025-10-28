@@ -5,8 +5,6 @@ using System.Linq;
 using BepInEx;
 using HarmonyLib;
 using LethalModUtils;
-using UnityEngine;
-using UnityEngine.Networking;
 
 namespace CustomBoomboxMusic;
 
@@ -24,48 +22,42 @@ public static class AudioManager
     {
         audioClips.Do(f => f.AudioClip.UnloadAudioData());
         audioClips.Clear();
-        ProcessDirectory(Paths.BepInExRootPath);
+        FS.IterateDirectories(
+            new DirectoryInfo(Paths.BepInExRootPath),
+            ProcessFile,
+            i =>
+                i.Name.Equals(
+                    CustomBoomboxMusic.DIRECTORY_NAME,
+                    StringComparison.CurrentCultureIgnoreCase
+                )
+                    ? FS.ProcessFilter.All
+                    : FS.ProcessFilter.DirectoriesOnly
+        );
         audioClips = audioClips.OrderBy(f => f.Crc).ToList();
         CustomBoomboxMusic.BoomboxPlayPatch.rng = new();
     }
 
-    private static int ProcessDirectory(string path)
+    private static void ProcessFile(FileInfo file)
     {
-        if (!Directory.Exists(path))
-            return 0;
-        CustomBoomboxMusic.Logger.LogDebug($">> ProcessDirectory({Path.GetFullPath(path)})");
-        var i = Directory.GetDirectories(path).Sum(ProcessDirectory);
-        if (
-            Path.GetFileName(path)
-                .Equals(
-                    CustomBoomboxMusic.DIRECTORY_NAME,
-                    StringComparison.CurrentCultureIgnoreCase
-                )
-        )
-            i += Directory.GetFiles(path).Count(ProcessFile);
-        return i;
-    }
-
-    private static bool ProcessFile(string path)
-    {
-        path = Path.GetFullPath(path);
-        CustomBoomboxMusic.Logger.LogDebug($">> ProcessFile({path})");
+        CustomBoomboxMusic.Logger.LogDebug($">> ProcessFile(file: {file})");
         try
         {
             var audioClip = Audio.Load(
-                new Uri(path),
+                new Uri(file.FullName),
                 out var webRequest,
                 CustomBoomboxMusic.Instance.LoadTimeOut
             );
             audioClips.Add(
-                new AudioFile(Crc32.Calculate(webRequest.downloadHandler.data), audioClip, path)
+                new AudioFile(
+                    Crc32.Calculate(webRequest.downloadHandler.data),
+                    audioClip,
+                    file.FullName
+                )
             );
-            return true;
         }
         catch (Exception e)
         {
-            CustomBoomboxMusic.Logger.LogWarning($"Couldn't load file {path}: {e}");
-            return false;
+            CustomBoomboxMusic.Logger.LogWarning($"Couldn't load file {file.FullName}: {e}");
         }
     }
 

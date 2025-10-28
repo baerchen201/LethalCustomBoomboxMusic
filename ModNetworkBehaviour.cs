@@ -129,7 +129,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
         if (networkManager == null || !networkManager.IsListening)
             return;
         if (
-            __rpc_exec_stage != __RpcExecStage.Server
+            __rpc_exec_stage != __RpcExecStage.Execute
             && (networkManager.IsClient || networkManager.IsHost)
         )
         {
@@ -153,10 +153,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
             );
         }
         if (
-            __rpc_exec_stage != __RpcExecStage.Server
+            __rpc_exec_stage != __RpcExecStage.Execute
             || networkManager is { IsServer: false, IsHost: false }
         )
             return;
+        __rpc_exec_stage = __RpcExecStage.Send;
 
         CustomBoomboxMusic.Logger.LogDebug(
             $">> StartPlayingMusicServerRpc({boomboxObjectReference}, {crc})"
@@ -182,7 +183,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
         if (networkManager == null || !networkManager.IsListening)
             return;
         if (
-            __rpc_exec_stage != __RpcExecStage.Client
+            __rpc_exec_stage != __RpcExecStage.Execute
             && (networkManager.IsServer || networkManager.IsHost)
         )
         {
@@ -206,10 +207,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
             );
         }
         if (
-            __rpc_exec_stage != __RpcExecStage.Client
+            __rpc_exec_stage != __RpcExecStage.Execute
             || networkManager is { IsClient: false, IsHost: false }
         )
             return;
+        __rpc_exec_stage = __RpcExecStage.Send;
 
         CustomBoomboxMusic.Logger.LogDebug(
             $">> StartPlayingMusicClientRpc({boomboxObjectReference}, {crc}, {clipName})"
@@ -257,7 +259,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
         if (networkManager == null || !networkManager.IsListening)
             return;
         if (
-            __rpc_exec_stage != __RpcExecStage.Server
+            __rpc_exec_stage != __RpcExecStage.Execute
             && (networkManager.IsClient || networkManager.IsHost)
         )
         {
@@ -277,10 +279,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
             );
         }
         if (
-            __rpc_exec_stage != __RpcExecStage.Server
+            __rpc_exec_stage != __RpcExecStage.Execute
             || networkManager is { IsServer: false, IsHost: false }
         )
             return;
+        __rpc_exec_stage = __RpcExecStage.Send;
 
         CustomBoomboxMusic.Logger.LogDebug(
             $">> StartPlayingVanillaMusicServerRpc({boomboxObjectReference}, {vanillaId})"
@@ -305,7 +308,7 @@ public class ModNetworkBehaviour : NetworkBehaviour
         if (networkManager == null || !networkManager.IsListening)
             return;
         if (
-            __rpc_exec_stage != __RpcExecStage.Client
+            __rpc_exec_stage != __RpcExecStage.Execute
             && (networkManager.IsServer || networkManager.IsHost)
         )
         {
@@ -325,10 +328,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
             );
         }
         if (
-            __rpc_exec_stage != __RpcExecStage.Client
+            __rpc_exec_stage != __RpcExecStage.Execute
             || networkManager is { IsClient: false, IsHost: false }
         )
             return;
+        __rpc_exec_stage = __RpcExecStage.Send;
 
         CustomBoomboxMusic.Logger.LogDebug(
             $">> StartPlayingVanillaMusicClientRpc({boomboxObjectReference}, {vanillaId})"
@@ -367,24 +371,29 @@ public class ModNetworkBehaviour : NetworkBehaviour
         Play(boombox, clip);
     }
 
-    internal static void InitializeRPCS_ModNetworkBehaviour()
+    protected override void __initializeRpcs()
     {
-        NetworkManager.__rpc_func_table.Add(
+        __registerRpc(
             START_PLAYING_MUSIC_SERVER_RPC_ID,
-            __rpc_handler_StartPlayingMusicServerRpc
+            __rpc_handler_StartPlayingMusicServerRpc,
+            nameof(StartPlayingMusicServerRpc)
         );
-        NetworkManager.__rpc_func_table.Add(
+        __registerRpc(
             START_PLAYING_MUSIC_CLIENT_RPC_ID,
-            __rpc_handler_StartPlayingMusicClientRpc
+            __rpc_handler_StartPlayingMusicClientRpc,
+            nameof(StartPlayingMusicClientRpc)
         );
-        NetworkManager.__rpc_func_table.Add(
+        __registerRpc(
             START_PLAYING_VANILLA_MUSIC_SERVER_RPC_ID,
-            __rpc_handler_StartPlayingVanillaMusicServerRpc
+            __rpc_handler_StartPlayingVanillaMusicServerRpc,
+            nameof(StartPlayingVanillaMusicServerRpc)
         );
-        NetworkManager.__rpc_func_table.Add(
+        __registerRpc(
             START_PLAYING_VANILLA_MUSIC_CLIENT_RPC_ID,
-            __rpc_handler_StartPlayingVanillaMusicClientRpc
+            __rpc_handler_StartPlayingVanillaMusicClientRpc,
+            nameof(StartPlayingVanillaMusicClientRpc)
         );
+        base.__initializeRpcs();
     }
 
     private static void __rpc_handler_StartPlayingMusicServerRpc(
@@ -402,13 +411,13 @@ public class ModNetworkBehaviour : NetworkBehaviour
         string? clipName = null;
         if (!isMissingNameNull)
             reader.ReadValueSafe(out clipName);
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Server;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Execute;
         ((ModNetworkBehaviour)target).StartPlayingMusicServerRpc(
             boomboxObjectReference,
             crc,
             clipName
         );
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.None;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Send;
     }
 
     private static void __rpc_handler_StartPlayingMusicClientRpc(
@@ -426,13 +435,13 @@ public class ModNetworkBehaviour : NetworkBehaviour
         string? clipName = null;
         if (!isMissingNameNull)
             reader.ReadValueSafe(out clipName);
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Client;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Execute;
         ((ModNetworkBehaviour)target).StartPlayingMusicClientRpc(
             boomboxObjectReference,
             crc,
             clipName
         );
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.None;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Send;
     }
 
     private static void __rpc_handler_StartPlayingVanillaMusicServerRpc(
@@ -446,12 +455,12 @@ public class ModNetworkBehaviour : NetworkBehaviour
             return;
         reader.ReadValueSafe(out NetworkObjectReference boomboxObjectReference);
         ByteUnpacker.ReadValueBitPacked(reader, out int vanillaId);
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Server;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Execute;
         ((ModNetworkBehaviour)target).StartPlayingVanillaMusicServerRpc(
             boomboxObjectReference,
             vanillaId
         );
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.None;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Send;
     }
 
     private static void __rpc_handler_StartPlayingVanillaMusicClientRpc(
@@ -465,12 +474,12 @@ public class ModNetworkBehaviour : NetworkBehaviour
             return;
         reader.ReadValueSafe(out NetworkObjectReference boomboxObjectReference);
         ByteUnpacker.ReadValueBitPacked(reader, out int vanillaId);
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Client;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Execute;
         ((ModNetworkBehaviour)target).StartPlayingVanillaMusicClientRpc(
             boomboxObjectReference,
             vanillaId
         );
-        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.None;
+        ((ModNetworkBehaviour)target).__rpc_exec_stage = __RpcExecStage.Send;
     }
 
     protected override string __getTypeName() => GetType().Name;

@@ -47,7 +47,7 @@
       PrivateAssets="all"
     />
     <PackageReference Include="baer1.ChatCommandAPI" Version="0.2.*" />
-    <PackageReference Include="baer1.LethalModUtils" Version="0.0.5" />
+    <PackageReference Include="baer1.LethalModUtils" Version="0.0.7" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
     <PackageReference

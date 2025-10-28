@@ -101,8 +101,6 @@ public class CustomBoomboxMusic : BaseUnityPlugin
 #endif
         AudioManager.Reload();
 
-        ModNetworkBehaviour.InitializeRPCS_ModNetworkBehaviour();
-
         if (Chainloader.PluginInfos.ContainsKey("baer1.ChatCommandAPI"))
             ChatCommandIntegration.Init();
 
@@ -134,6 +132,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
             );
 
             networkPrefab = bundle.LoadAsset<GameObject>("ModNetworkManager");
+            networkPrefab.name = $"{MyPluginInfo.PLUGIN_GUID}-ModNetworkManager";
             networkPrefab.AddComponent<ModNetworkBehaviour>();
 
             NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
