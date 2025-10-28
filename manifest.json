@@ -1,10 +1,10 @@
 {
   "name": "CustomBoomboxMusic",
-  "version_number": "2.3.0",
+  "version_number": "2.4.0",
   "website_url": "https://github.com/baerchen201/LethalCustomBoomboxMusic",
   "description": "The quickest, easiest and most reliable mod for adding music to the boombox",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2100",
-    "baer1-LethalModUtils-0.0.5"
+    "baer1-LethalModUtils-0.0.7"
   ]
 }
