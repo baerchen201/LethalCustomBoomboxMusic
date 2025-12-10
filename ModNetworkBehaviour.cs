@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 #if SPECTATE_ENEMIES
+using BepInEx.Bootstrap;
 using SpectateEnemy;
 #endif
 
@@ -26,10 +27,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
     {
         var localPlayer = StartOfRound.Instance?.localPlayerController;
 #if SPECTATE_ENEMIES
-        var spectatedEnemy =
-            SpectateEnemiesAPI.IsLoaded && SpectateEnemiesAPI.IsSpectatingEnemies
-                ? SpectateEnemiesAPI.CurrentEnemySpectating()
-                : null;
+        var spectatedEnemy = Chainloader.PluginInfos.ContainsKey(
+            CustomBoomboxMusic.SPECTATE_ENEMIES
+        )
+            ? TryGetSpectatedEnemy()
+            : null;
 #endif
         CustomBoomboxMusic.Logger.LogDebug(
             $">> IsInBoomboxRange(boombox: {boombox}) localPlayer:{localPlayer} isPLayerDead:{localPlayer?.isPlayerDead} spectatedPlayerScript:{localPlayer?.spectatedPlayerScript}"
@@ -59,6 +61,11 @@ public class ModNetworkBehaviour : NetworkBehaviour
                 || boombox.IsOwner
                 || boombox.OwnerClientId == localPlayer!.spectatedPlayerScript!.actualClientId
             );
+
+        GameObject? TryGetSpectatedEnemy() =>
+            SpectateEnemiesAPI.IsLoaded && SpectateEnemiesAPI.IsSpectatingEnemies
+                ? SpectateEnemiesAPI.CurrentEnemySpectating()
+                : null;
     }
 
     public override void OnNetworkDespawn()

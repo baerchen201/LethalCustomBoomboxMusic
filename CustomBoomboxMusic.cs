@@ -42,7 +42,7 @@ public class CustomBoomboxMusic : BaseUnityPlugin
     private ConfigEntry<bool> clientSide = null!;
     public bool ClientSide { get; private set; }
 
-    private const string SPECTATE_ENEMIES = "SpectateEnemy";
+    internal const string SPECTATE_ENEMIES = "SpectateEnemy";
 
     private void Awake()
     {
