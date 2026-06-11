@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ChatCommandAPI;
+using ChatCommandAPI.Old;
+using ChatCommandAPI.Utils;
 using HarmonyLib;
 using UnityEngine;
 
@@ -15,7 +16,7 @@ internal static class ChatCommandIntegration
     }
 }
 
-public class BoomboxCommand : Command
+public class BoomboxCommand : LegacyCommand
 {
     public override string Name => "Boombox";
     public override string Description => "Various commands for the CustomBoomboxMusic mod";
@@ -30,7 +31,7 @@ public class BoomboxCommand : Command
         ];
     public override string[] Syntax => ["play <track>", "reload", "version", "list"];
 
-    public override bool Invoke(string[] args, Dictionary<string, string> kwargs, out string? error)
+    public override bool Invoke(string[] args, out string? error)
     {
         error = null;
 
@@ -38,21 +39,19 @@ public class BoomboxCommand : Command
         switch (command)
         {
             case "reload" or "r":
-                ChatCommandAPI.ChatCommandAPI.Print("Reloading...");
+                Chat.Print("Reloading...");
                 AudioManager.Reload();
-                ChatCommandAPI.ChatCommandAPI.Print(
-                    $"Done reloading, found {a(AudioManager.AudioClips.Count)}"
-                );
+                Chat.Print($"Done reloading, found {a(AudioManager.AudioClips.Count)}");
                 break;
             case "version" or "v" or null:
-                ChatCommandAPI.ChatCommandAPI.Print(
+                Chat.Print(
                     $"{MyPluginInfo.PLUGIN_NAME} v{MyPluginInfo.PLUGIN_VERSION}\n{a(AudioManager.AudioClips.Count)} loaded"
                 );
                 break;
             case "list" or "l":
                 var clips = AudioManager.AudioClips.OrderBy(i => i.Name).ToList();
                 var count = clips.Count;
-                ChatCommandAPI.ChatCommandAPI.Print(
+                Chat.Print(
                     count == 0
                         ? $"{a(count)} loaded"
                         : $"{a(count)} loaded:\n> {clips.Join(i => i.Name, "\n> ")}"
@@ -84,9 +83,7 @@ public class BoomboxCommand : Command
                 error = "Track could not be found";
                 return Play(args[1..].Join(null, " "), boombox);
             default:
-                ChatCommandAPI.ChatCommandAPI.PrintError(
-                    "Invalid subcommand, use /help for usage information"
-                );
+                Chat.PrintError("Invalid subcommand, use /help for usage information");
                 break;
         }
 
