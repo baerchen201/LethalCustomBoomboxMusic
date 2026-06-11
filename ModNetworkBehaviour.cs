@@ -62,10 +62,12 @@ public class ModNetworkBehaviour : NetworkBehaviour
                 || boombox.OwnerClientId == localPlayer!.spectatedPlayerScript!.actualClientId
             );
 
+#if SPECTATE_ENEMIES
         GameObject? TryGetSpectatedEnemy() =>
             SpectateEnemiesAPI.IsLoaded && SpectateEnemiesAPI.IsSpectatingEnemies
                 ? SpectateEnemiesAPI.CurrentEnemySpectating()
                 : null;
+#endif
     }
 
     public override void OnNetworkDespawn()
